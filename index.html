@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Κουίζ Γραμματικής</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('/static/background.png') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+        .container {
+            display: none;
+            width: 90%;
+            max-width: 1000px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+        .container.active {
+            display: block;
+        }
+        #game-state {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+        }
+        #game-state p {
+            margin: 0;
+        }
+        #score {
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #timer {
+            font-size: 36px; /* Make the timer bigger */
+            font-weight: bold;
+            margin: 0;
+        }
+        #question-container {
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            min-height: 100px;
+        }
+        .answer-button {
+            padding: 12px 20px;
+            margin: 10px;
+            background: #d9a760;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.3s ease;
+        }
+        .answer-button:hover {
+            background: #8c6d2e;
+            transform: scale(1.05); /* Slightly enlarge the button on hover */
+        }
+        .answer-button.incorrect {
+            background-color: #dc3545;
+        }
+        .answer-button.correct {
+            background-color: #28a745;
+        }
+        .level-button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .level-button:hover {
+            transform: scale(1.05); /* Slightly enlarge the button on hover */
+        }
+        .level-button.green { background: #28a745; }
+        .level-button.yellow { background: #ffc107; }
+        .level-button.red { background: #dc3545; }
+        .level-button.purple { background: #800080; }
+        .level-description {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        select, input[type="number"] {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 80%;
+        }
+        .button {
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 16px;
+            background: linear-gradient(to bottom, #d9a760, #8c6d2e);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background: #8c6d2e;
+        }
+        /* Style for level selection in three columns */
+        .level-list {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .level-group {
+            flex: 1;
+            padding: 10px;
+            width: 30%; /* Divide into three columns */
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        .overlay.active {
+            display: flex;
+        }
+        .overlay button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .overlay button:hover {
+            background-color: #0056b3;
+        }
+        .settings-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-left: 35px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: #eee;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Screen 1: Username Entry -->
+<div id="username-screen" class="container active">
+    <h1>Καλωσήρθατε</h1>
+    <label for="username">Όνομα Χρήστη:</label><br>
+    <input type="text" id="username" placeholder="Εισάγετε το όνομά σας" required><br>
+    <button id="username-submit" class="button">Συνέχεια</button>
+</div>
+
+<!-- Screen 2: Role Selection -->
+<div id="role-selection" class="container">
+    <h1>Παρακαλώ διαλέξτε την ιδιότητά σας:</h1>
+    <button id="teacher-button" class="button">Εκπαιδευτικός</button>
+    <button id="student-button" class="button">Μαθητής</button>
+</div>
+
+<!-- Screen 3: Level Selection -->
+<div id="level-selection" class="container">
+    <h1>Επιλέξτε Επίπεδο</h1>
+    <div class="level-list">
+        <!-- First Column -->
+        <div class="level-group">
+            <h3>Επίπεδα 1–5</h3>
+            <button class="level-button green" data-level="1">Επίπεδο 1</button>
+            <p class="level-description">Χρόνοι: Ενεστώτας, Μέλλοντας<br>Φωνές: Ενεργητική</p>
+            <button class="level-button green" data-level="2">Επίπεδο 2</button>
+            <p class="level-description">Χρόνοι: Παρατατικός, Αόριστος<br>Φωνές: Ενεργητική</p>
+            <button class="level-button yellow" data-level="3">Επίπεδο 3</button>
+            <p class="level-description">Χρόνοι: Ενεστώτας, Παρατατικός, Μέλλοντας, Αόριστος<br>Φωνές: Ενεργητική</p>
+            <button class="level-button yellow" data-level="4">Επίπεδο 4</button>
+            <p class="level-description">Χρόνοι: Παρακείμενος, Υπερσυντέλικος<br>Φωνές: Ενεργητική</p>
+            <button class="level-button red" data-level="5">Επίπεδο 5</button>
+            <p class="level-description">Χρόνοι: Όλοι οι χρόνοι<br>Φωνές: Ενεργητική</p>
+        </div>
+        <!-- Second Column -->
+        <div class="level-group">
+            <h3>Επίπεδα 6–10</h3>
+            <button class="level-button green" data-level="6">Επίπεδο 6</button>
+            <p class="level-description">Χρόνοι: Ενεστώτας, Μέλλοντας<br>Φωνές: Μέση</p>
+            <button class="level-button green" data-level="7">Επίπεδο 7</button>
+            <p class="level-description">Χρόνοι: Αόριστος, Παρατατικός<br>Φωνές: Μέση</p>
+            <button class="level-button yellow" data-level="8">Επίπεδο 8</button>
+            <p class="level-description">Χρόνοι: Ενεστώτας, Παρατατικός, Μέλλοντας, Αόριστος<br>Φωνές: Μέση</p>
+            <button class="level-button yellow" data-level="9">Επίπεδο 9</button>
+            <p class="level-description">Χρόνοι: Παρακείμενος, Υπερσυντέλικος<br>Φωνές: Μέση</p>
+            <button class="level-button red" data-level="10">Επίπεδο 10</button>
+            <p class="level-description">Χρόνοι: Όλοι οι χρόνοι<br>Φωνές: Μέση</p>
+        </div>
+        <!-- Third Column -->
+        <div class="level-group">
+            <h3>Επίπεδα 11–15</h3>
+            <button class="level-button purple" data-level="11">Επίπεδο 11</button>
+            <p class="level-description">Χρόνοι: Όλοι οι χρόνοι<br>Φωνές: Ενεργητική, Μέση</p>
+            <button class="level-button purple" data-level="12">Επίπεδο 12</button>
+            <p class="level-description">Χρόνοι: Απαρέμφατο, Μετοχή<br>Φωνές: Ενεργητική</p>
+            <button class="level-button purple" data-level="13">Επίπεδο 13</button>
+            <p class="level-description">Χρόνοι: Απαρέμφατο, Μετοχή<br>Φωνές: Μέση</p>
+            <button class="level-button purple" data-level="14">Επίπεδο 14</button>
+            <p class="level-description">Χρόνοι: Όλοι οι χρόνοι<br>Φωνές: Ενεργητική, Μέση, Απαρέμφατο, Μετοχή</p>
+            <button class="level-button purple" data-level="15">Επίπεδο 15</button>
+            <p class="level-description">Χρόνοι: Χειροκίνητη επιλογή<br>Φωνές: Χειροκίνητη επιλογή</p>
+        </div>
+    </div>
+</div>
+
+<div id="loading-spinner" style="display: none; font-size: 20px;">Φόρτωση...</div>
+
+<!-- Screen: Settings for Level 15 -->
+<div id="level-15-settings" class="container">
+    <h2>Ρυθμίσεις για Επίπεδο 15</h2>
+    
+    <form id="filters-form">
+        <!-- Φωνές -->
+        <div class="settings-section">
+            <h3>Φωνές</h3>
+            <div class="options">
+                <label class="checkbox-container">
+                    <input type="checkbox" value="ενεργητική" name="voices">
+                    <span class="checkmark"></span> Ενεργητική
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="μέση" name="voices">
+                    <span class="checkmark"></span> Μέση
+                </label>
+            </div>
+        </div>
+    
+        <!-- Χρόνοι -->
+        <div class="settings-section">
+            <h3>Χρόνοι</h3>
+            <div class="options">
+                <label class="checkbox-container">
+                    <input type="checkbox" value="ενεστώτας" name="tenses">
+                    <span class="checkmark"></span> Ενεστώτας
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="παρατατικός" name="tenses">
+                    <span class="checkmark"></span> Παρατατικός
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="μέλλοντας" name="tenses">
+                    <span class="checkmark"></span> Μέλλοντας
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="αόριστος" name="tenses">
+                    <span class="checkmark"></span> Αόριστος
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="παρακείμενος" name="tenses">
+                    <span class="checkmark"></span> Παρακείμενος
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="υπερσυντέλικος" name="tenses">
+                    <span class="checkmark"></span> Υπερσυντέλικος
+                </label>
+            </div>
+        </div>
+    
+        <!-- Τύποι -->
+        <div class="settings-section">
+            <h3>Τύποι</h3>
+            <div class="options">
+                <label class="checkbox-container">
+                    <input type="checkbox" value="Ρηματικά Πρόσωπα" name="forms">
+                    <span class="checkmark"></span> Ρηματικά Πρόσωπα
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="απαρέμφατο" name="forms">
+                    <span class="checkmark"></span> Απαρέμφατο
+                </label>
+                <label class="checkbox-container">
+                    <input type="checkbox" value="μετοχή" name="forms">
+                    <span class="checkmark"></span> Μετοχή
+                </label>
+            </div>
+        </div>
+    </form>
+    
+    <button id="start-level-15" class="button">Έναρξη Επίπεδου 15</button>
+</div>
+
+<!-- Screen 4: Game Settings -->
+<div id="settings-screen" class="container">
+    <h1>Ρυθμίσεις Παιχνιδιού</h1>
+    <label for="time-selection">Χρόνος:</label><br>
+    <select id="time-selection" required>
+        <option value="">--</option>
+        <option value="60">60 δευτερόλεπτα</option>
+        <option value="90">90 δευτερόλεπτα</option>
+        <option value="120">120 δευτερόλεπτα</option>
+        <option value="150">150 δευτερόλεπτα</option>
+        <option value="180">180 δευτερόλεπτα</option>
+        <option value="210">210 δευτερόλεπτα</option>
+        <option value="240">240 δευτερόλεπτα</option>
+        <option value="270">270 δευτερόλεπτα</option>
+        <option value="300">300 δευτερόλεπτα</option>
+        <option value="infinite">Απεριόριστο</option>
+    </select><br>
+    <label for="lives-selection">Ζωές:</label><br>
+    <select id="lives-selection" required>
+        <option value="">--</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="infinite">Απεριόριστο</option>
+    </select><br>
+    <button id="start-game-button" class="button">Έναρξη</button>
+</div>
+
+
+<!-- Screen 5: Game Screen -->
+<div id="game-screen" class="container">
+    <h1>Ερώτηση</h1>
+    <div id="question-container"></div>
+
+    <div id="game-state">
+        <p id="timer">Χρόνος: </p>
+        <p id="lives">Ζωές: </p>
+        <p id="score">Score: 0</p>
+    </div>
+    <button id="end-button" class="button">Τέλος</button>
+</div>
+
+<!-- Overlay for End Game -->
+<div id="end-overlay" class="overlay">
+    <div>
+        <h1>Το παιχνίδι τελείωσε!</h1>
+        <button id="retry-button">Δοκιμάστε Ξανά</button>
+        <button id="level-select-button" onclick="resetScore();">Επιλογή Επιπέδου</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const usernameScreen = document.getElementById("username-screen");
+    const roleSelection = document.getElementById("role-selection");
+    const levelSelection = document.getElementById("level-selection");
+    const level15Settings = document.getElementById("level-15-settings");
+    const settingsScreen = document.getElementById("settings-screen");
+    const gameScreen = document.getElementById("game-screen");
+    const endOverlay = document.getElementById("end-overlay");
+
+    const level15Button = document.querySelector(".level-button.purple[data-level='15']");
+    const startLevel15Button = document.getElementById("start-level-15");
+    const startGameButton = document.getElementById("start-game-button");
+    const endButton = document.getElementById("end-button");
+    const retryButton = document.getElementById("retry-button");
+    const levelSelectButton = document.getElementById("level-select-button");
+
+    let currentLevel = null;
+    let currentLives = 3;
+    let currentTimer = 90;
+    let score = 0;
+    let interval;
+
+    function getSelectedOptions(name) {
+        return Array.from(document.querySelectorAll(`input[name='${name}']:checked`)).map(input => input.value);
+    }
+
+    // Event Listener: Username Submission
+    document.getElementById("username-submit").addEventListener("click", () => {
+        const username = document.getElementById("username").value.trim();
+        if (username) {
+            usernameScreen.classList.remove("active");
+            roleSelection.classList.add("active");
+        } else {
+            alert("Παρακαλώ εισάγετε όνομα χρήστη.");
+        }
+    });
+
+    // Event Listener: Role Selection
+    document.getElementById("teacher-button").addEventListener("click", () => {
+        roleSelection.classList.remove("active");
+        levelSelection.classList.add("active");
+    });
+
+    document.getElementById("student-button").addEventListener("click", () => {
+        roleSelection.classList.remove("active");
+        levelSelection.classList.add("active");
+    });
+
+    // Event Listener: Level Selection
+    document.querySelectorAll(".level-button").forEach(button => {
+        button.addEventListener("click", () => {
+            currentLevel = button.dataset.level;
+            if (currentLevel === "15") {
+                levelSelection.classList.remove("active");
+                level15Settings.classList.add("active");
+            } else {
+                levelSelection.classList.remove("active");
+                settingsScreen.classList.add("active");
+            }
+        });
+    });
+
+
+    // Start Level 15
+    startLevel15Button.addEventListener("click", () => {
+        const voices = getSelectedOptions("voices");
+        const tenses = getSelectedOptions("tenses");
+        const forms = getSelectedOptions("forms");
+
+    // Ensure at least one selection per filter
+    if (!voices.length || !tenses.length || !forms.length) {
+        alert("Παρακαλώ επιλέξτε τουλάχιστον μία φωνή, έναν χρόνο, και έναν τύπο.");
+        return;
+    }
+
+    const level15Params = new URLSearchParams({
+        level: 15,
+        voices: voices.join(","),
+        tenses: tenses.join(","),
+        forms: forms.join(","),
+    });
+
+    level15Settings.classList.remove("active");
+    settingsScreen.classList.add("active");
+
+    // Handle Start Game with lives/time selection
+    startGameButton.onclick = () => {
+        const selectedLives = document.getElementById("lives-selection").value;
+        const selectedTime = document.getElementById("time-selection").value;
+
+        if (!selectedLives || !selectedTime) {
+            alert("Παρακαλώ επιλέξτε έγκυρο χρόνο και αριθμό ζωών.");
+            return;
+        }
+
+        currentLives = selectedLives === "infinite" ? Infinity : parseInt(selectedLives);
+        currentTimer = selectedTime === "infinite" ? 0 : parseInt(selectedTime);
+
+        settingsScreen.classList.remove("active");
+        gameScreen.classList.add("active");
+
+        startGame(15, currentLives, currentTimer, level15Params);
+    };
+});
+
+    // Start Generic Levels (1–14)
+    startGameButton.addEventListener("click", () => {
+        const selectedLives = document.getElementById("lives-selection").value;
+        const selectedTime = document.getElementById("time-selection").value;
+
+        if (!selectedLives || !selectedTime) {
+            alert("Παρακαλώ επιλέξτε έγκυρο χρόνο και αριθμό ζωών.");
+            return;
+        }
+
+        currentLives = selectedLives === "infinite" ? Infinity : parseInt(selectedLives);
+        currentTimer = selectedTime === "infinite" ? 0 : parseInt(selectedTime);
+
+        settingsScreen.classList.remove("active");
+        gameScreen.classList.add("active");
+
+        startGame(currentLevel, currentLives, currentTimer);
+    });
+
+    function startGame(level, lives, timer, params = null) {
+    clearInterval(interval);
+
+    // Reset score for a new game
+    score = 0;
+    document.getElementById("score").innerText = `Score: ${score}`;
+    updateGameState(lives, timer);
+
+    if (timer > 0) {
+        interval = setInterval(() => {
+            if (timer > 0) {
+                timer--;
+                updateTimerDisplay(timer);
+            } else {
+                clearInterval(interval);
+                endGame();
+            }
+        }, 1000);
+    }
+
+    // Build URL for Level 15 with filtering parameters
+    const url = params ? `/get_question?${params.toString()}` : `/get_question?level=${level}`;
+
+    fetchQuestion(url);
+}
+
+function fetchQuestion(url) {
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error(`[ERROR] Fetch failed: ${data.error}`);
+                alert("Αδυναμία φόρτωσης ερωτήσεων. Προσπαθήστε ξανά.");
+            } else {
+                displayQuestion(data);
+            }
+        })
+        .catch(error => {
+            console.error("[ERROR] Network issue:", error);
+            alert("Υπήρξε σφάλμα στο δίκτυο. Δοκιμάστε ξανά.");
+        });
+}
+
+function checkAnswer(selectedAnswer, correctAnswer) {
+    const buttons = document.querySelectorAll(".answer-button");
+    buttons.forEach(button => {
+        button.classList.toggle("correct", button.innerText === correctAnswer);
+        button.classList.toggle("incorrect", button.innerText !== correctAnswer);
+        button.disabled = true;
+    });
+
+    if (selectedAnswer !== correctAnswer) {
+        if (currentLives !== Infinity) {
+            currentLives--;
+            updateGameState(currentLives, currentTimer);
+            if (currentLives === 0) {
+                clearInterval(interval);
+                endGame();
+                return;
+            }
+        }
+    } else {
+        score++;
+        document.getElementById("score").innerText = `Score: ${score}`;
+    }
+
+    // Fetch a new question
+    const level15Params = new URLSearchParams({
+        level: currentLevel,
+        voices: getSelectedOptions("voices").join(","),
+        tenses: getSelectedOptions("tenses").join(","),
+        forms: getSelectedOptions("forms").join(","),
+    });
+    const url = `/get_question?${level15Params.toString()}`;
+    fetchQuestion(url);
+}
+
+    function updateGameState(lives, timer) {
+        const livesDisplay = lives === Infinity ? "Απεριόριστο" : "❤️".repeat(lives);
+        document.getElementById("lives").innerText = `Ζωές: ${livesDisplay}`;
+        updateTimerDisplay(timer);
+    }
+
+    function updateTimerDisplay(timer) {
+        const timerDisplay = timer === 0 ? "Απεριόριστο" : `${timer} δευτερόλεπτα`;
+        document.getElementById("timer").innerText = `Χρόνος: ${timerDisplay}`;
+    }
+
+    function displayQuestion(data) {
+        const questionContainer = document.getElementById("question-container");
+        const questionText = `<p>${data.question_text}</p>`;
+        let optionsHTML = "";
+
+        data.options.forEach(option => {
+            optionsHTML += `<button class="answer-button">${option}</button>`;
+        });
+
+        questionContainer.innerHTML = questionText + optionsHTML;
+
+        document.querySelectorAll(".answer-button").forEach(button => {
+            button.addEventListener("click", (event) => {
+                checkAnswer(event.target.innerText, data.correct);
+            });
+        });
+    }
+
+    function checkAnswer(selectedAnswer, correctAnswer) {
+        const buttons = document.querySelectorAll(".answer-button");
+        buttons.forEach(button => {
+            button.classList.toggle("correct", button.innerText === correctAnswer);
+            button.classList.toggle("incorrect", button.innerText !== correctAnswer);
+            button.disabled = true;
+        });
+
+        if (selectedAnswer !== correctAnswer) {
+            if (currentLives !== Infinity) {
+                currentLives--;
+                updateGameState(currentLives, currentTimer);
+                if (currentLives === 0) {
+                    clearInterval(interval);
+                    endGame();
+                }
+            }
+        } else {
+            score++;
+            document.getElementById("score").innerText = `Score: ${score}`;
+        }
+
+        setTimeout(() => {
+            fetch(`/get_question?level=${currentLevel}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        endGame();
+                    } else {
+                        displayQuestion(data);
+                    }
+                });
+        }, 2000);
+    }
+
+    if (endButton) {
+        endButton.addEventListener("click", () => {
+            console.log("End button clicked."); // Debugging log
+            endGame();
+        });
+    }
+    
+    function endGame() {
+        clearInterval(interval);
+        gameScreen.classList.remove("active");
+        endOverlay.classList.add("active");
+
+        endOverlay.innerHTML = `
+            <div>
+                <h1>Το παιχνίδι τελείωσε!</h1>
+                <p>Βαθμολογία: ${score}</p>
+                <button id="retry-button">Δοκιμάστε Ξανά</button>
+                <button id="level-select-button">Επιλογή Επιπέδου</button>
+            </div>
+        `;
+
+        document.getElementById("retry-button").addEventListener("click", () => {
+            resetScore();
+            endOverlay.classList.remove("active");
+            settingsScreen.classList.add("active");
+        });
+
+        document.getElementById("level-select-button").addEventListener("click", () => {
+            resetScore();
+            endOverlay.classList.remove("active");
+            levelSelection.classList.add("active");
+        });
+    }
+
+    function resetScore() {
+        score = 0;
+        document.getElementById("score").innerText = `Score: ${score}`;
+    }
+});
+
+    // Event Listener: End Game Button
+// Event Listener: End Game Button
+endButton.addEventListener("click", () => {
+    // Stop the game timer
+    if (interval) {
+        clearInterval(interval);
+        interval = null; // Clear the interval reference
+    }
+
+    // Show the end overlay with dynamic content
+    endOverlay.innerHTML = `
+        <div>
+            <h1>Το παιχνίδι τελείωσε!</h1>
+            <p>Βαθμολογία: ${score}</p>
+            <button id="retry-button" class="button">Δοκιμάστε Ξανά</button>
+            <button id="level-select-button" class="button">Επιλογή Επιπέδου</button>
+        </div>
+    `;
+    endOverlay.classList.add("active");
+
+    // Attach event listeners for retry and level selection buttons
+    document.getElementById("retry-button").addEventListener("click", () => {
+        resetGame();
+        endOverlay.classList.remove("active");
+        settingsScreen.classList.add("active");
+    });
+
+    document.getElementById("level-select-button").addEventListener("click", () => {
+        resetGame();
+        endOverlay.classList.remove("active");
+        levelSelection.classList.add("active");
+    });
+
+    // Hide the game screen
+    gameScreen.classList.remove("active");
+});
+
+// Function to reset the game state
+function resetGame() {
+    score = 0;
+    currentTimer = 90; // Or the default timer value
+    currentLives = 3;  // Or the default lives value
+    document.getElementById("score").innerText = `Score: ${score}`;
+    document.getElementById("timer").innerText = `Χρόνος: --`;
+    document.getElementById("lives").innerText = `Ζωές: --`;
+}
+
+    function startGame(level, lives, timer, params = null) {
+    clearInterval(interval);
+
+    score = 0;
+    document.getElementById("score").innerText = `Score: ${score}`;
+    updateGameState(lives, timer);
+
+    if (timer > 0) {
+        interval = setInterval(() => {
+            if (timer > 0) {
+                timer--;
+                updateTimerDisplay(timer);
+            } else {
+                clearInterval(interval);
+                endGame();
+            }
+        }, 1000);
+    }
+
+    // Check if parameters are passed for Level 15
+    const url = params ? `/get_question?${params.toString()}` : `/get_question?level=${level}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                level15Settings.classList.add("active"); // Go back to settings
+                settingsScreen.classList.remove("active");
+                return;
+            }
+                    })
+        .catch(error => console.error("Error fetching question:", error));
+}
+
+    // Update Game State
+    function updateGameState(lives, timer) {
+        const livesDisplay = lives === Infinity ? "Απεριόριστο" : "❤️".repeat(lives);
+        document.getElementById("lives").innerText = `Ζωές: ${livesDisplay}`;
+        updateTimerDisplay(timer);
+    }
+
+    // Update Timer Display
+    function updateTimerDisplay(timer) {
+        const timerDisplay = timer === 0 ? "Απεριόριστο" : `${timer} δευτερόλεπτα`;
+        document.getElementById("timer").innerText = `Χρόνος: ${timerDisplay}`;
+    }
+
+    // Display Question
+    function displayQuestion(data) {
+        document.getElementById("question-container").innerHTML = `<p>${data.question_text}</p>`;
+        let optionsHTML = '';
+        data.options.forEach(option => {
+            optionsHTML += `<button class="answer-button" onclick="checkAnswer('${option}', '${data.correct}')">${option}</button>`;
+        });
+        document.getElementById("question-container").innerHTML += optionsHTML;
+    }
+
+
+    function endGame() {
+        clearInterval(interval);
+
+    
+endOverlay.innerHTML = `
+    <div>
+        <h1>Το παιχνίδι τελείωσε!</h1>
+        <p>Βαθμολογία: ${score}</p>
+        <button id="retry-button">Δοκιμάστε Ξανά</button>
+        <button id="level-select-button">Επιλογή Επιπέδου</button>
+    </div>
+`;
+
+// Attach event listeners after adding the buttons
+document.getElementById("retry-button").addEventListener("click", () => {
+    resetScore();
+    endOverlay.classList.remove("active");
+    gameScreen.classList.remove("active");
+    settingsScreen.classList.add("active");
+});
+
+
+document.getElementById("level-select-button").addEventListener("click", () => {
+    resetScore(); // Call the resetScore function
+    endOverlay.classList.remove("active");
+    gameScreen.classList.remove("active");
+    levelSelection.classList.add("active");
+});
+
+endOverlay.classList.add("active");
+}
+
+function fetchLevel15Question() {
+    const voices = getSelectedOptions("voices").length ? getSelectedOptions("voices") : ["ενεργητική", "μέση"];
+    const tenses = getSelectedOptions("tenses").length ? getSelectedOptions("tenses") : ["ενεστώτας", "παρατατικός"];
+    const forms = getSelectedOptions("forms").length ? getSelectedOptions("forms") : ["Ρηματικά Πρόσωπα"];
+
+    const params = new URLSearchParams({
+        level: 15,
+        voices: voices.join(","),
+        tenses: tenses.join(","),
+        forms: forms.join(",")
+    });
+
+    fetch(`/get_question?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error); // Inform the user about the issue
+                endGame(); // End the game gracefully
+            } else {
+                displayQuestion(data);
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching Level 15 question:", error);
+            alert("Υπήρξε σφάλμα στο δίκτυο. Δοκιμάστε ξανά.");
+        });
+}
+
+</script>
+
+</body>
+</html>
